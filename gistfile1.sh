@@ -119,6 +119,14 @@ brew_tap() {
 }
 
 brew_expand_alias() {
+  # 2>/dev/null: Forward errors into /dev/null (Don't show errors)
+  # head: strip first X lines
+  # awk: The Awk is mostly used for pattern scanning and processing. 
+  # It searches one or more files to see if they contain lines that matches with the specified patterns
+  # and then perform associated actions.
+  # in our context, there's no pattern so the 'gsubbing' and 'printing' is done for 'every' line (in our
+  # case, since we're using head -1, it only performs it on one line).
+  # more info @ http://www.thegeekstuff.com/2010/01/awk-introduction-tutorial-7-awk-print-examples/
   brew info "$1" 2>/dev/null | head -1 | awk '{gsub(/:/, ""); print $1}'
 }
 

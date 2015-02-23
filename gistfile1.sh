@@ -119,7 +119,14 @@ brew_tap() {
 }
 
 brew_expand_alias() {
-  # 2>/dev/null: Forward errors into /dev/null (Don't show errors)
+  # 2>/dev/null
+  # The > operator redirects the output usually to a file but it can be to a device. You can also use >> to append.
+  # If you don't specify a number then the standard output stream is assumed but you can also redirect errors
+  # > file redirects stdout to file
+  # 1> file redirects stdout to file
+  # 2> file redirects stderr to file
+  # &> file redirects stdout and stderr to file
+  # /dev/null is the null device it takes any input you want and throws it away. It can be used to suppress any output.
   # head: strip first X lines
   # awk: The Awk is mostly used for pattern scanning and processing. 
   # It searches one or more files to see if they contain lines that matches with the specified patterns

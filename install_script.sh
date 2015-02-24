@@ -89,16 +89,19 @@ case "$SHELL" in
 esac
 
 brew_install_or_upgrade() {
-  if brew_is_installed "$1"; then
-    if brew_is_upgradable "$1"; then
-      fancy_echo "Upgrading %s ..." "$1"
-      brew upgrade "$@"
+  local formula="$1"; shift
+  local options="$1"
+
+  if brew_is_installed $formula; then
+    if brew_is_upgradable $formula; then
+      fancy_echo "Upgrading %s ..." $formula
+      brew upgrade $formula $options
     else
-      fancy_echo "Already using the latest version of %s. Skipping ..." "$1"
+      fancy_echo "Already using the latest version of %s. Skipping ..." $formula
     fi
   else
-    fancy_echo "Installing %s ..." "$1"
-    brew install "$@"
+    fancy_echo "Installing %s ..." $formula
+    brew install $formula $options
   fi
 }
 
@@ -181,27 +184,17 @@ brew update
 brew_install_or_upgrade 'mysql'
 brew_install_or_upgrade 'mongo'
 brew_install_or_upgrade 'redis'
-brew_install_or_upgrade 'sphinx --mysql --with-libstemmer'
+brew_install_or_upgrade 'sphinx' '--mysql --with-libstemmer'
 brew_install_or_upgrade 'geos'
-brew_install_or_upgrade 'wkhtmltopdf'
+
+brew_tap 'caskroom/cask'
+brew_install_or_upgrade 'brew-cask'
+brew cask install 'wkhtmltopdf'
  
-# brew_install_or_upgrade 'git'
-# brew_install_or_upgrade 'postgres'
-# brew_launchctl_restart 'postgresql'
-# brew_install_or_upgrade 'the_silver_searcher'
-# brew_install_or_upgrade 'vim'
-# brew_install_or_upgrade 'ctags'
-# brew_install_or_upgrade 'tmux'
-# brew_install_or_upgrade 'reattach-to-user-namespace'
-# brew_install_or_upgrade 'imagemagick'
-# brew_install_or_upgrade 'qt'
-# brew_install_or_upgrade 'hub'
-# brew_install_or_upgrade 'node'
-
-# brew_install_or_upgrade 'rbenv'
-# brew_install_or_upgrade 'ruby-build'
-
+# Install rvm
 curl -sSL https://get.rvm.io | bash
+source ~/.rvm/scripts/rvm
+rvm install 1.9.3-p484 --autolibs=3
 
 # shellcheck disable=SC2016
 # append_to_zshrc 'eval "$(rbenv init - zsh --no-rehash)"' 1

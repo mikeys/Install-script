@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 # Welcome to the thoughtbot laptop script!
 # Be prepared to turn your laptop (or desktop, no haters here)
@@ -189,11 +189,13 @@ brew_install_or_upgrade 'geos'
 
 brew_tap 'caskroom/cask'
 brew_install_or_upgrade 'brew-cask'
-brew cask install 'wkhtmltopdf'
+# brew cask install 'wkhtmltopdf'
  
 # Install rvm
 curl -sSL https://get.rvm.io | bash
 source ~/.rvm/scripts/rvm
+
+# Install ruby
 rvm install 1.9.3-p484 --autolibs=3
 
 # shellcheck disable=SC2016

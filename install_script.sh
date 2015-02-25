@@ -3,6 +3,7 @@
 # Welcome to the thoughtbot laptop script!
 # Be prepared to turn your laptop (or desktop, no haters here)
 # into an awesome development machine.
+readonly STATE_FILE_PATH=$HOME/.gett_installer_state
 readonly GTFORGE_REPO=git@github.com:gtforge/gtforge_server.git
 readonly DEPLOY_PATH=$HOME/Development4/gtforge_server
 readonly RUBY_VER=1.9.3-p484
@@ -188,6 +189,16 @@ configure_mongo() {
   sudo chown -R $USER /data/db
 }
 
+load_state() {
+  if [ -e "$STATE_FILE_PATH" ] ; then
+    state_id=$(cat "$STATE_FILE_PATH")
+  fi
+}
+
+save_state() {
+  echo $state_id > "$STATE_FILE_PATH"
+}
+
 # Installations
 install_brew
 
@@ -263,7 +274,7 @@ fancy_echo "Creating additional required directories ..."
   mkdir -p tmp/pids
 
 fancy_echo "Setting up database schemas ..."
-mysql.start server
+mysql.server start
 
 if [ -f "$HOME/.laptop.local" ]; then
   . "$HOME/.laptop.local"

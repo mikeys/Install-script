@@ -1,12 +1,9 @@
 #!/bin/bash
 
-# Welcome to the thoughtbot laptop script!
-# Be prepared to turn your laptop (or desktop, no haters here)
-# into an awesome development machine.
-readonly STATE_FILE_PATH=$HOME/.gett_installer_state
 readonly GTFORGE_REPO=git@github.com:gtforge/gtforge_server.git
 readonly DEPLOY_PATH=$HOME/Development4/gtforge_server
 readonly RUBY_VER=1.9.3-p484
+readonly STATE_FILE_PATH=$HOME/.gett_installer_state
 
 fancy_echo() {
   # Set local variable fmt to a string containing the first argument
@@ -190,91 +187,118 @@ configure_mongo() {
 }
 
 load_state() {
+  local installer_state="start"
+
   if [ -e "$STATE_FILE_PATH" ] ; then
-    state_id=$(cat "$STATE_FILE_PATH")
+    installer_state=$(cat "$STATE_FILE_PATH")
   fi
+
+  echo $installer_state
 }
 
 save_state() {
-  echo $state_id > "$STATE_FILE_PATH"
+  state_id=$1
+  echo $state_id > $STATE_FILE_PATH
 }
 
 # Installations
-install_brew
+state_install() {
+  save_state "install"
+  fancy_echo "Downloading and installing all prerequisites ..."
 
-fancy_echo "Updating Homebrew formulas ..."
-  brew update
+  install_brew
 
-brew_install_or_upgrade 'mysql'
-brew_install_or_upgrade 'mongo'; configure_mongo
-brew_install_or_upgrade 'redis'
-brew_install_or_upgrade 'sphinx' '--mysql --with-libstemmer'
-brew_install_or_upgrade 'geos'
+  fancy_echo "Updating Homebrew formulas ..."
+    brew update
 
-brew_tap 'caskroom/cask'
-brew_install_or_upgrade 'brew-cask'
-# brew cask install 'wkhtmltopdf'
- 
-fancy_echo "Installing RVM (Ruby Version Manager) ..."
-  curl -sSL https://get.rvm.io | bash
-  source ~/.rvm/scripts/rvm
+  brew_install_or_upgrade 'mysql'
+  brew_install_or_upgrade 'mongo'; configure_mongo
+  brew_install_or_upgrade 'redis'
+  brew_install_or_upgrade 'sphinx' '--mysql --with-libstemmer'
+  brew_install_or_upgrade 'geos'
 
-fancy_echo "Installing Ruby 1.9.3 stable ..."
-  rvm install $RUBY_VER--autolibs=3
+  brew_tap 'caskroom/cask'
+  brew_install_or_upgrade 'brew-cask'
+  # brew cask install 'wkhtmltopdf'
+   
+  fancy_echo "Installing RVM (Ruby Version Manager) ..."
+    curl -sSL https://get.rvm.io | bash
+    source ~/.rvm/scripts/rvm
 
-gem_install_or_update_global 'bundler'
-fancy_echo "Configuring Bundler ..."
-  number_of_cores=$(sysctl -n hw.ncpu)
-  bundle config --global jobs $((number_of_cores - 1))
+  fancy_echo "Installing Ruby 1.9.3 stable ..."
+    rvm install $RUBY_VER--autolibs=3
 
-fancy_echo "Installations complete."
+  gem_install_or_update_global 'bundler'
+  fancy_echo "Configuring Bundler ..."
+    number_of_cores=$(sysctl -n hw.ncpu)
+    bundle config --global jobs $((number_of_cores - 1))
 
+  fancy_echo "Installations complete."
+  state_deploy
+}
 
-# Github setup instructions
-fancy_echo "Please create a GitHub account at https://github.com/join"
-pause "Press [Enter] after you're done ..."
+# Deploy Gtforge Project
+state_deploy() {
+  save_state "deploy" 
+  fancy_echo "Starting gtforge project deployment ..."
 
-fancy_echo "Checking for SSH key, generating one if it doesn't exist ..."
-  [[ -f ~/.ssh/id_rsa.pub ]] || ssh-keygen -t rsa
+  fancy_echo "Please create a GitHub account at https://github.com/join"
+  pause "Press [Enter] after you're done ..."
 
-fancy_echo "Copying public key to clipboard ... " 
-  [[ -f ~/.ssh/id_rsa.pub ]] && cat ~/.ssh/id_rsa.pub | pbcopy
+  fancy_echo "Checking for SSH key, generating one if it doesn't exist ..."
+    [[ -f ~/.ssh/id_rsa.pub ]] || ssh-keygen -t rsa
 
-fancy_echo "Public SSH key copied to clipboard. Next: \n- Go to https://github.com/settings/ssh\n- Click on 'Add SSH Key'\n- Set a 'title' (any name will do)\n- Paste the public key (it's already copied to your clipboard)\n- Ask Eliran to give you access to the gtforge organization and it's relevant repositories"
-pause "Press [Enter] after you're done ..."
+  fancy_echo "Copying public key to clipboard ... " 
+    [[ -f ~/.ssh/id_rsa.pub ]] && cat ~/.ssh/id_rsa.pub | pbcopy
 
-fancy_echo "Verifying accessibility to gtforge_server Github repository ..."
-  while ! gtforge_repo_is_accessible; do 
-    fancy_echo "It seems like you don't have access to the gtforge_server Github repository.\nPlease talk to Eliran to sort things out :)"
-    pause "Press [Enter] to retry ..."
-  done
+  fancy_echo "Public SSH key copied to clipboard. Next: \n- Go to https://github.com/settings/ssh\n- Click on 'Add SSH Key'\n- Set a 'title' (any name will do)\n- Paste the public key (it's already copied to your clipboard)\n- Ask Eliran to give you access to the gtforge organization and it's relevant repositories"
+  pause "Press [Enter] after you're done ..."
 
-# Gtforge Server Project Deployment
-fancy_echo "Deploying gtforge_server project locally ..."
-  if [ ! -d "$DEPLOY_PATH" ]; then
-    fancy_echo "Creating directory %s ..." $DEPLOY_PATH
-    mkdir -p $DEPLOY_PATH
-  fi
+  fancy_echo "Verifying accessibility to gtforge_server Github repository ..."
+    while ! gtforge_repo_is_accessible; do 
+      fancy_echo "It seems like you don't have access to the gtforge_server Github repository.\nPlease talk to Eliran to sort things out :)"
+      pause "Press [Enter] to retry ..."
+    done
 
-fancy_echo "Changing active directory to %s ..." $DEPLOY_PATH
-  cd $DEPLOY_PATH
-  git clone $GTFORGE_REPO .
+  # Gtforge Server Project Deployment
+  fancy_echo "Deploying gtforge_server project locally ..."
+    if [ ! -d "$DEPLOY_PATH" ]; then
+      fancy_echo "Creating directory %s ..." $DEPLOY_PATH
+      mkdir -p $DEPLOY_PATH
+    fi
 
-fancy_echo "Configuring gtforge_server project ..."
-fancy_echo "Setting a fixed ruby version (${RUBY_VER}) and gemset: (gtforge_server)"
-  echo "ruby-${RUBY_VER}" > .ruby-version
-  echo "gtforge_server" > .ruby-gemset
-  cd .
+  fancy_echo "Changing active directory to %s ..." $DEPLOY_PATH
+    cd $DEPLOY_PATH
+    git clone $GTFORGE_REPO .
 
-fancy_echo "Installing relevant gems ..."
-  bundle install
+  fancy_echo "Configuring gtforge_server project ..."
+  fancy_echo "Setting a fixed ruby version (${RUBY_VER}) and gemset: (gtforge_server)"
+    echo "ruby-${RUBY_VER}" > .ruby-version
+    echo "gtforge_server" > .ruby-gemset
+    cd .
 
-fancy_echo "Creating additional required directories ..."
-  mkdir log
-  mkdir -p tmp/pids
+  fancy_echo "Installing relevant gems ..."
+    bundle install
 
-fancy_echo "Setting up database schemas ..."
-mysql.server start
+  fancy_echo "Creating additional required directories ..."
+    mkdir log
+    mkdir -p tmp/pids
+
+  fancy_echo "Setting up database schemas ..."
+  mysql.server start
+}
+
+case "$(load_state)" in
+  install)
+    state_install
+    ;;
+  deploy)
+    state_deploy
+    ;;
+  *)
+    state_install
+    ;;
+esac
 
 if [ -f "$HOME/.laptop.local" ]; then
   . "$HOME/.laptop.local"

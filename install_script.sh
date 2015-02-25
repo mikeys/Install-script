@@ -3,6 +3,9 @@
 # Welcome to the thoughtbot laptop script!
 # Be prepared to turn your laptop (or desktop, no haters here)
 # into an awesome development machine.
+readonly GTFORGE_REPO=git@github.com:gtforge/gtforge_server.git
+readonly DEPLOY_PATH=$HOME/Development4/gtforge_server
+readonly RUBY_VERSION=1.9.3-p484
 
 fancy_echo() {
   # Set local variable fmt to a string containing the first argument
@@ -19,7 +22,7 @@ fancy_echo() {
   # All arguments afterward specify the formatted data
   # $@ = All arguments as different strings
   # $* = All arguments as one concatenated string (space as delimiter)
-  printf "\n==> $fmt\n" "$@"
+  printf "$(tput sgr 0)\nGettInstaller ==> $fmt\n" "$@"
 }
 
 function pause() {
@@ -161,43 +164,39 @@ gem_install_or_update() {
 # ls, we would use 'command ls'
 # -v option: a string is printed describing COMMAND. The -V option produces a more
 # verbose description:
-if ! command -v brew >/dev/null; then
-  fancy_echo "Installing Homebrew ..."
-  curl -fsS \
-    'https://raw.githubusercontent.com/Homebrew/install/master/install' | ruby
+install_brew()  {
+  if ! command -v brew >/dev/null; then
+    fancy_echo "Installing Homebrew ..."
+    curl -fsS \
+      'https://raw.githubusercontent.com/Homebrew/install/master/install' | ruby
 
-  append_to_zshrc '# recommended by brew doctor'
+    append_to_zshrc '# recommended by brew doctor'
 
-  # shellcheck disable=SC2016
-  append_to_zshrc 'export PATH="/usr/local/bin:$PATH"' 1
+    append_to_zshrc 'export PATH="/usr/local/bin:$PATH"' 1
 
-  export PATH="/usr/local/bin:$PATH"
-else
-  fancy_echo "Homebrew already installed. Skipping ..."
-fi
+    export PATH="/usr/local/bin:$PATH"
+  else
+    fancy_echo "Homebrew already installed. Skipping ..."
+  fi
+}
 
-mongo_configure() {
+gtforge_repo_is_accessible() {
+  git ls-remote $GTFORGE_REPO &>/dev/null
+}
+
+configure_mongo() {
   sudo mkdir -p /data/db
   sudo chown -R $USER /data/db
 }
 
-fancy_echo "Create a GitHub account at https://github.com/join"
-pause "Press [Enter] after you're done ..."
-
-fancy_echo "Checking for SSH key, generating one if it doesn't exist ..."
-[[ -f ~/.ssh/id_rsa.pub ]] || ssh-keygen -t rsa
-
-fancy_echo "Copying public key to clipboard ... " 
-[[ -f ~/.ssh/id_rsa.pub ]] && cat ~/.ssh/id_rsa.pub | pbcopy
-
-fancy_echo "Add public key to Github: follow the instructions @ https://help.github.com/articles/generating-ssh-keys/#step-3-add-your-ssh-key-to-your-account"
-pause "Press [Enter] after you're done ..."
+# Installations
+install_brew
 
 fancy_echo "Updating Homebrew formulas ..."
 brew update
 
 brew_install_or_upgrade 'mysql'
-brew_install_or_upgrade 'mongo'
+brew_install_or_upgrade 'mongo'; configure_mongo
 brew_install_or_upgrade 'redis'
 brew_install_or_upgrade 'sphinx' '--mysql --with-libstemmer'
 brew_install_or_upgrade 'geos'
@@ -206,14 +205,60 @@ brew_tap 'caskroom/cask'
 brew_install_or_upgrade 'brew-cask'
 # brew cask install 'wkhtmltopdf'
  
-# Install rvm
 fancy_echo "Installing RVM (Ruby Version Manager) ..."
 curl -sSL https://get.rvm.io | bash
 source ~/.rvm/scripts/rvm
 
-# Install ruby
 fancy_echo "Installing Ruby 1.9.3 stable ..."
-rvm install 1.9.3-p484 --autolibs=3
+rvm install $RUBY_VERSION --autolibs=3
+
+fancy_echo "Installations complete."
+
+# Github setup instructions
+fancy_echo "Please create a GitHub account at https://github.com/join"
+pause "Press [Enter] after you're done ..."
+
+fancy_echo "Checking for SSH key, generating one if it doesn't exist ..."
+[[ -f ~/.ssh/id_rsa.pub ]] || ssh-keygen -t rsa
+
+fancy_echo "Copying public key to clipboard ... " 
+[[ -f ~/.ssh/id_rsa.pub ]] && cat ~/.ssh/id_rsa.pub | pbcopy
+
+fancy_echo "Public SSH key copied to clipboard. Next: \n- Go to https://github.com/settings/ssh\n- Click on 'Add SSH Key'\n- Set a 'title' (any name will do)\n- Paste the public key (it's already copied to your clipboard)\n- Ask Eliran to give you access to the gtforge organization and it's relevant repositories"
+pause "Press [Enter] after you're done ..."
+
+fancy_echo "Verifying accessibility to gtforge_server Github repository ..."
+while ! gtforge_repo_is_accessible; do 
+  fancy_echo "It seems like you don't have access to the gtforge_server Github repository.\nPlease talk to Eliran to sort things out :)"
+  pause "Press [Enter] to retry ..."
+done
+
+# Gtforge Server Project Deployment
+fancy_echo "Deploying gtforge_server project locally ..."
+if [ ! -d "$DEPLOY_PATH" ]; then
+  fancy_echo "Creating directory %s ..." $DEPLOY_PATH
+  mkdir -p $DEPLOY_PATH
+fi
+
+fancy_echo "Changing active directory to %s ..." $DEPLOY_PATH
+cd $DEPLOY_PATH
+git clone $GTFORGE_REPO .
+
+fancy_echo "Configuring gtforge_server project ..."
+fancy_echo "Setting a fixed ruby version (${RUBY_VERSION}) and gemset: (gtforge_server)"
+echo "ruby-${RUBY_VERSION}" > .ruby-version
+echo "gtforge_server" > .ruby-gemset
+cd .
+
+fancy_echo "Installing relevant gems ..."
+bundle install
+
+fancy_echo "Creating additional required directories ..."
+mkdir log
+mkdir -p tmp/pids
+
+fancy_echo "Setting up database schemas ..."
+mysql.start server
 
 if [ -f "$HOME/.laptop.local" ]; then
   . "$HOME/.laptop.local"

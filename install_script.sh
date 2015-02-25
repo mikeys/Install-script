@@ -193,7 +193,7 @@ configure_mongo() {
 install_brew
 
 fancy_echo "Updating Homebrew formulas ..."
-brew update
+  brew update
 
 brew_install_or_upgrade 'mysql'
 brew_install_or_upgrade 'mongo'; configure_mongo
@@ -206,56 +206,62 @@ brew_install_or_upgrade 'brew-cask'
 # brew cask install 'wkhtmltopdf'
  
 fancy_echo "Installing RVM (Ruby Version Manager) ..."
-curl -sSL https://get.rvm.io | bash
-source ~/.rvm/scripts/rvm
+  curl -sSL https://get.rvm.io | bash
+  source ~/.rvm/scripts/rvm
 
 fancy_echo "Installing Ruby 1.9.3 stable ..."
-rvm install $RUBY_VERSION --autolibs=3
+  rvm install $RUBY_VERSION --autolibs=3
+
+gem_install_or_update 'bundler'
+fancy_echo "Configuring Bundler ..."
+  number_of_cores=$(sysctl -n hw.ncpu)
+  bundle config --global jobs $((number_of_cores - 1))
 
 fancy_echo "Installations complete."
+
 
 # Github setup instructions
 fancy_echo "Please create a GitHub account at https://github.com/join"
 pause "Press [Enter] after you're done ..."
 
 fancy_echo "Checking for SSH key, generating one if it doesn't exist ..."
-[[ -f ~/.ssh/id_rsa.pub ]] || ssh-keygen -t rsa
+  [[ -f ~/.ssh/id_rsa.pub ]] || ssh-keygen -t rsa
 
 fancy_echo "Copying public key to clipboard ... " 
-[[ -f ~/.ssh/id_rsa.pub ]] && cat ~/.ssh/id_rsa.pub | pbcopy
+  [[ -f ~/.ssh/id_rsa.pub ]] && cat ~/.ssh/id_rsa.pub | pbcopy
 
 fancy_echo "Public SSH key copied to clipboard. Next: \n- Go to https://github.com/settings/ssh\n- Click on 'Add SSH Key'\n- Set a 'title' (any name will do)\n- Paste the public key (it's already copied to your clipboard)\n- Ask Eliran to give you access to the gtforge organization and it's relevant repositories"
 pause "Press [Enter] after you're done ..."
 
 fancy_echo "Verifying accessibility to gtforge_server Github repository ..."
-while ! gtforge_repo_is_accessible; do 
-  fancy_echo "It seems like you don't have access to the gtforge_server Github repository.\nPlease talk to Eliran to sort things out :)"
-  pause "Press [Enter] to retry ..."
-done
+  while ! gtforge_repo_is_accessible; do 
+    fancy_echo "It seems like you don't have access to the gtforge_server Github repository.\nPlease talk to Eliran to sort things out :)"
+    pause "Press [Enter] to retry ..."
+  done
 
 # Gtforge Server Project Deployment
 fancy_echo "Deploying gtforge_server project locally ..."
-if [ ! -d "$DEPLOY_PATH" ]; then
-  fancy_echo "Creating directory %s ..." $DEPLOY_PATH
-  mkdir -p $DEPLOY_PATH
-fi
+  if [ ! -d "$DEPLOY_PATH" ]; then
+    fancy_echo "Creating directory %s ..." $DEPLOY_PATH
+    mkdir -p $DEPLOY_PATH
+  fi
 
 fancy_echo "Changing active directory to %s ..." $DEPLOY_PATH
-cd $DEPLOY_PATH
-git clone $GTFORGE_REPO .
+  cd $DEPLOY_PATH
+  git clone $GTFORGE_REPO .
 
 fancy_echo "Configuring gtforge_server project ..."
 fancy_echo "Setting a fixed ruby version (${RUBY_VERSION}) and gemset: (gtforge_server)"
-echo "ruby-${RUBY_VERSION}" > .ruby-version
-echo "gtforge_server" > .ruby-gemset
-cd .
+  echo "ruby-${RUBY_VERSION}" > .ruby-version
+  echo "gtforge_server" > .ruby-gemset
+  cd .
 
 fancy_echo "Installing relevant gems ..."
-bundle install
+  bundle install
 
 fancy_echo "Creating additional required directories ..."
-mkdir log
-mkdir -p tmp/pids
+  mkdir log
+  mkdir -p tmp/pids
 
 fancy_echo "Setting up database schemas ..."
 mysql.start server

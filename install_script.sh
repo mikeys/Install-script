@@ -19,7 +19,11 @@ fancy_echo() {
   # All arguments afterward specify the formatted data
   # $@ = All arguments as different strings
   # $* = All arguments as one concatenated string (space as delimiter)
-  printf "\n$fmt\n" "$@"
+  printf "\n==> $fmt\n" "$@"
+}
+
+function pause() {
+  read -p "$*"
 }
 
 append_to_zshrc() {
@@ -172,11 +176,22 @@ else
   fancy_echo "Homebrew already installed. Skipping ..."
 fi
 
-mongo_install() {
-  brew_install_or_upgrade 'mongo'
+mongo_configure() {
   sudo mkdir -p /data/db
   sudo chown -R $USER /data/db
 }
+
+fancy_echo "Create a GitHub account at https://github.com/join"
+pause "Press [Enter] after you're done ..."
+
+fancy_echo "Checking for SSH key, generating one if it doesn't exist ..."
+[[ -f ~/.ssh/id_rsa.pub ]] || ssh-keygen -t rsa
+
+fancy_echo "Copying public key to clipboard ... " 
+[[ -f ~/.ssh/id_rsa.pub ]] && cat ~/.ssh/id_rsa.pub | pbcopy
+
+fancy_echo "Add public key to Github: follow the instructions @ https://help.github.com/articles/generating-ssh-keys/#step-3-add-your-ssh-key-to-your-account"
+pause "Press [Enter] after you're done ..."
 
 fancy_echo "Updating Homebrew formulas ..."
 brew update
@@ -192,44 +207,13 @@ brew_install_or_upgrade 'brew-cask'
 # brew cask install 'wkhtmltopdf'
  
 # Install rvm
+fancy_echo "Installing RVM (Ruby Version Manager) ..."
 curl -sSL https://get.rvm.io | bash
 source ~/.rvm/scripts/rvm
 
 # Install ruby
+fancy_echo "Installing Ruby 1.9.3 stable ..."
 rvm install 1.9.3-p484 --autolibs=3
-
-# shellcheck disable=SC2016
-# append_to_zshrc 'eval "$(rbenv init - zsh --no-rehash)"' 1
-
-# brew_install_or_upgrade 'openssl'
-# brew unlink openssl && brew link openssl --force
-# brew_install_or_upgrade 'libyaml'
-
-# ruby_version="$(curl -sSL http://ruby.thoughtbot.com/latest)"
-
-# eval "$(rbenv init - zsh)"
-
-# if ! rbenv versions | grep -Fq "$ruby_version"; then
-#   rbenv install -s "$ruby_version"
-# fi
-# 
-# rbenv global "$ruby_version"
-# rbenv shell "$ruby_version"
-# 
-# gem update --system
-
-# gem_install_or_update 'bundler'
-
-# fancy_echo "Configuring Bundler ..."
-# number_of_cores=$(sysctl -n hw.ncpu)
-# bundle config --global jobs $((number_of_cores - 1))
-
-# brew_install_or_upgrade 'heroku-toolbelt'
-
-# if ! command -v rcup >/dev/null; then
-#   brew_tap 'thoughtbot/formulae'
-#   brew_install_or_upgrade 'rcm'
-# fi
 
 if [ -f "$HOME/.laptop.local" ]; then
   . "$HOME/.laptop.local"

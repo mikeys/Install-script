@@ -5,7 +5,7 @@
 # into an awesome development machine.
 readonly GTFORGE_REPO=git@github.com:gtforge/gtforge_server.git
 readonly DEPLOY_PATH=$HOME/Development4/gtforge_server
-readonly RUBY_VERSION=1.9.3-p484
+readonly RUBY_VER=1.9.3-p484
 
 fancy_echo() {
   # Set local variable fmt to a string containing the first argument
@@ -147,14 +147,13 @@ brew_launchctl_restart() {
   launchctl load "$HOME/Library/LaunchAgents/$plist" >/dev/null
 }
 
-gem_install_or_update() {
+gem_install_or_update_global() {
   if gem list "$1" --installed > /dev/null; then
     fancy_echo "Updating %s ..." "$1"
-    gem update "$@"
+    rvm all do \@global gem update "$@"
   else
     fancy_echo "Installing %s ..." "$1"
-    gem install "$@"
-    rbenv rehash
+    rvm all do \@global gem install "$@"
   fi
 }
 
@@ -210,9 +209,9 @@ fancy_echo "Installing RVM (Ruby Version Manager) ..."
   source ~/.rvm/scripts/rvm
 
 fancy_echo "Installing Ruby 1.9.3 stable ..."
-  rvm install $RUBY_VERSION --autolibs=3
+  rvm install $RUBY_VER--autolibs=3
 
-gem_install_or_update 'bundler'
+gem_install_or_update_global 'bundler'
 fancy_echo "Configuring Bundler ..."
   number_of_cores=$(sysctl -n hw.ncpu)
   bundle config --global jobs $((number_of_cores - 1))
@@ -251,8 +250,8 @@ fancy_echo "Changing active directory to %s ..." $DEPLOY_PATH
   git clone $GTFORGE_REPO .
 
 fancy_echo "Configuring gtforge_server project ..."
-fancy_echo "Setting a fixed ruby version (${RUBY_VERSION}) and gemset: (gtforge_server)"
-  echo "ruby-${RUBY_VERSION}" > .ruby-version
+fancy_echo "Setting a fixed ruby version (${RUBY_VER}) and gemset: (gtforge_server)"
+  echo "ruby-${RUBY_VER}" > .ruby-version
   echo "gtforge_server" > .ruby-gemset
   cd .
 

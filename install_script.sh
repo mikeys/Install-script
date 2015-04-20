@@ -226,7 +226,7 @@ state_install() {
     source ~/.rvm/scripts/rvm
 
   fancy_echo "Installing Ruby 1.9.3 stable ..."
-    rvm install $RUBY_VER--autolibs=3
+    rvm install $RUBY_VER --autolibs=3
 
   gem_install_or_update_global 'bundler'
   fancy_echo "Configuring Bundler ..."

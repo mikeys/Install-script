@@ -1,9 +1,9 @@
 #!/bin/bash
 
 readonly GTFORGE_REPO=""
-readonly DEPLOY_PATH=$HOME/Development4/gtforge_server
+readonly DEPLOY_PATH=""
 readonly RUBY_VER=1.9.3-p484
-readonly STATE_FILE_PATH=$HOME/.gett_installer_state
+readonly STATE_FILE_PATH=$HOME/.installer_state
 
 fancy_echo() {
   # Set local variable fmt to a string containing the first argument
